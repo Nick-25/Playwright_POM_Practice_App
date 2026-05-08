@@ -52,12 +52,16 @@ export class TodoPage {
     return this.taskItems.filter({ hasText: taskName });
   }
 
+  latestTaskRow(taskName: string) {
+    return this.taskRow(taskName).last();
+  }
+
   taskStatus(taskName: string) {
     return this.taskRow(taskName).locator('td').nth(3);
   }
 
   async completeTask(taskName: string) {
-    await this.page.getByRole('button', { name: `Mark ${taskName} complete` }).click();
+    await this.latestTaskRow(taskName).getByRole('button', { name: `Mark ${taskName} complete` }).click();
   }
 
   async searchFor(text: string) {
@@ -73,7 +77,7 @@ export class TodoPage {
   }
 
   async expectTaskVisible(taskName: string) {
-    await expect(this.taskRow(taskName)).toBeVisible();
+    await expect(this.latestTaskRow(taskName)).toBeVisible();
   }
 
   async expectTaskHidden(taskName: string) {

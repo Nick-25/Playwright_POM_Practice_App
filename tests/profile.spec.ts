@@ -1,23 +1,17 @@
-import { test } from '@playwright/test';
+import { test } from './fixtures/pages.js';
 import { users } from './fixtures/users.js';
 import { signInWithStoredSession } from './helpers/auth.js';
-import { ProfilePage } from './pages/ProfilePage.js';
-import { SignInPage } from './pages/SignInPage.js';
 
 test.describe('profile', () => {
-  test('is available with a stored signed-in session', async ({ page }) => {
+  test('is available with a stored signed-in session', async ({ page, profilePage }) => {
     await signInWithStoredSession(page, 'nick');
-    const profilePage = new ProfilePage(page);
 
     await profilePage.goto();
 
     await profilePage.expectSession(`Signed in as ${users.nick.name}.`);
   });
 
-  test('loads the signed-in user profile from the app API', async ({ page }) => {
-    const signInPage = new SignInPage(page);
-    const profilePage = new ProfilePage(page);
-
+  test('loads the signed-in user profile from the app API', async ({ profilePage, signInPage }) => {
     await signInPage.goto();
     await signInPage.signIn(users.ada.email, users.ada.password);
 
@@ -34,10 +28,7 @@ test.describe('profile', () => {
     });
   });
 
-  test('loads a different profile for a different signed-in user', async ({ page }) => {
-    const signInPage = new SignInPage(page);
-    const profilePage = new ProfilePage(page);
-
+  test('loads a different profile for a different signed-in user', async ({ profilePage, signInPage }) => {
     await signInPage.goto();
     await signInPage.signIn(users.grace.email, users.grace.password);
 

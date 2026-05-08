@@ -1,15 +1,12 @@
-import { expect, test } from '@playwright/test';
 import { signInWithStoredSession } from './helpers/auth.js';
-import { TodoPage } from './pages/TodoPage.js';
+import { expect, test } from './fixtures/pages.js';
 
 test.describe('todo list', () => {
   test.beforeEach(async ({ page }) => {
     await signInWithStoredSession(page);
   });
 
-  test('shows existing tasks', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-
+  test('shows existing tasks', async ({ todoPage }) => {
     await todoPage.goto();
     await todoPage.expectLoaded();
 
@@ -17,21 +14,18 @@ test.describe('todo list', () => {
     await todoPage.expectTaskVisible('Review pull request');
   });
 
-  test('adds a new task', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-
+  test('adds a new task', async ({ todoPage }) => {
     await todoPage.goto();
     const initialCount = await todoPage.taskItems.count();
-    await todoPage.addTask('  Ship Playwright setup  ');
+    const taskName = `Ship Playwright setup ${Date.now()}`;
+    await todoPage.addTask(`  ${taskName}  `);
 
     await expect(todoPage.taskItems).toHaveCount(initialCount + 1);
-    await todoPage.expectTaskVisible('Ship Playwright setup');
+    await todoPage.expectTaskVisible(taskName);
     await expect(todoPage.newTaskInput).toHaveValue('');
   });
 
-  test('ignores blank tasks', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-
+  test('ignores blank tasks', async ({ todoPage }) => {
     await todoPage.goto();
     const initialCount = await todoPage.taskItems.count();
     await todoPage.addTask('   ');
@@ -39,19 +33,16 @@ test.describe('todo list', () => {
     await expect(todoPage.taskItems).toHaveCount(initialCount);
   });
 
-  test('marks a task complete', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-
+  test('marks a task complete', async ({ todoPage }) => {
     await todoPage.goto();
-    await todoPage.addTask('Task to complete');
-    await todoPage.completeTask('Task to complete');
+    const taskName = `Task to complete ${Date.now()}`;
+    await todoPage.addTask(taskName);
+    await todoPage.completeTask(taskName);
 
-    await expect(todoPage.taskStatus('Task to complete')).toHaveText('Done');
+    await expect(todoPage.latestTaskRow(taskName).locator('td').nth(3)).toHaveText('Done');
   });
 
-  test('filters the logged-in user tasks by search text and priority', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-
+  test('filters the logged-in user tasks by search text and priority', async ({ todoPage }) => {
     await todoPage.goto();
     await todoPage.searchFor('review');
     await todoPage.filterByPriority('High');

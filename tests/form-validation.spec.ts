@@ -1,11 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/pages.js';
 import { users } from './fixtures/users.js';
-import { SignInPage } from './pages/SignInPage.js';
 
 test.describe('sign in', () => {
-  test('lists the real users available in the practice app', async ({ page }) => {
-    const signInPage = new SignInPage(page);
-
+  test('lists the real users available in the practice app', async ({ signInPage }) => {
     await signInPage.goto();
 
     await expect(signInPage.sampleUsers).toHaveText([
@@ -16,9 +13,7 @@ test.describe('sign in', () => {
     ]);
   });
 
-  test('validates fields before sending credentials', async ({ page }) => {
-    const signInPage = new SignInPage(page);
-
+  test('validates fields before sending credentials', async ({ signInPage }) => {
     await signInPage.goto();
     await signInPage.signIn('not-an-email', 'short');
 
@@ -31,18 +26,14 @@ test.describe('sign in', () => {
     await expect(signInPage.passwordInput).toHaveAttribute('aria-invalid', 'true');
   });
 
-  test('rejects unknown credentials', async ({ page }) => {
-    const signInPage = new SignInPage(page);
-
+  test('rejects unknown credentials', async ({ signInPage }) => {
     await signInPage.goto();
     await signInPage.signIn('person@example.com', 'long-enough-password');
 
     await signInPage.expectStatus('Email or password is incorrect.');
   });
 
-  test('signs in a real user and persists their session', async ({ page }) => {
-    const signInPage = new SignInPage(page);
-
+  test('signs in a real user and persists their session', async ({ page, signInPage }) => {
     await signInPage.goto();
     await signInPage.signIn(users.ada.email, users.ada.password);
 

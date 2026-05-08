@@ -1,15 +1,21 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, mkdirSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { dirname, extname, join, normalize } from 'node:path';
 import { createServer } from 'node:http';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import Database from 'better-sqlite3';
 
 const port = Number(process.env.PORT ?? 3000);
 const appRoot = join(process.cwd(), 'app');
+const dbPath = join(process.cwd(), 'data', 'app.db');
 const jwtSecret = process.env.JWT_SECRET ?? 'local-development-secret';
 const sessionMaxAgeSeconds = 60 * 60 * 4;
 
-const users = [
+mkdirSync(dirname(dbPath), { recursive: true });
+const db = new Database(dbPath);
+db.pragma('journal_mode = WAL');
+
+const seedUsers = [
   {
     id: 'ada',
     email: 'ada@example.com',
@@ -57,7 +63,7 @@ function nextUserId(name, email) {
   let id = base || `user-${Date.now()}`;
   let suffix = 2;
 
-  while (users.some(user => user.id === id)) {
+  while (findUserById(id)) {
     id = `${base}-${suffix}`;
     suffix += 1;
   }
@@ -65,7 +71,42 @@ function nextUserId(name, email) {
   return id;
 }
 
-const tasks = [
+function getUsers() {
+  return db.prepare('SELECT id, email, password, name, role, team, access FROM users ORDER BY rowid').all();
+}
+
+function findUserById(id) {
+  return db.prepare('SELECT id, email, password, name, role, team, access FROM users WHERE id = ?').get(id);
+}
+
+function findUserByEmail(email) {
+  return db.prepare('SELECT id, email, password, name, role, team, access FROM users WHERE email = ?').get(email);
+}
+
+function getTaskById(id) {
+  const row = db
+    .prepare(
+      `SELECT id, title, assignee_id AS assigneeId, priority, status, due_date AS dueDate
+       FROM tasks
+       WHERE id = ?`,
+    )
+    .get(id);
+
+  return row;
+}
+
+function getTasksForUser(userId) {
+  return db
+    .prepare(
+      `SELECT id, title, assignee_id AS assigneeId, priority, status, due_date AS dueDate
+       FROM tasks
+       WHERE assignee_id = ?
+       ORDER BY rowid`,
+    )
+    .all(userId);
+}
+
+const seedTasks = [
   {
     id: 'task-101',
     title: 'Review pull request',
@@ -92,7 +133,39 @@ const tasks = [
   },
 ];
 
-let nextTaskNumber = 104;
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    team TEXT NOT NULL,
+    access TEXT NOT NULL CHECK (access IN ('user', 'admin'))
+  );
+
+  CREATE TABLE IF NOT EXISTS tasks (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    assignee_id TEXT NOT NULL,
+    priority TEXT NOT NULL CHECK (priority IN ('High', 'Medium', 'Low')),
+    status TEXT NOT NULL CHECK (status IN ('Open', 'In progress', 'Blocked', 'Done')),
+    due_date TEXT,
+    FOREIGN KEY (assignee_id) REFERENCES users(id)
+  );
+`);
+
+const insertSeedUser = db.prepare(`
+  INSERT OR IGNORE INTO users (id, email, password, name, role, team, access)
+  VALUES (@id, @email, @password, @name, @role, @team, @access)
+`);
+seedUsers.forEach(user => insertSeedUser.run(user));
+
+const insertSeedTask = db.prepare(`
+  INSERT OR IGNORE INTO tasks (id, title, assignee_id, priority, status, due_date)
+  VALUES (@id, @title, @assigneeId, @priority, @status, @dueDate)
+`);
+seedTasks.forEach(task => insertSeedTask.run(task));
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -213,7 +286,7 @@ function publicUser(user) {
 }
 
 function publicTask(task) {
-  const assignee = users.find(user => user.id === task.assigneeId);
+  const assignee = findUserById(task.assigneeId);
 
   return {
     id: task.id,
@@ -236,7 +309,7 @@ function tokenFromRequest(request) {
 function userFromRequest(request) {
   const claims = verifyJwt(tokenFromRequest(request));
 
-  return users.find(user => user.id === claims?.sub);
+  return findUserById(claims?.sub);
 }
 
 function requireUser(request, response) {
@@ -289,7 +362,7 @@ const server = createServer(async (request, response) => {
     sendJson(
       response,
       200,
-      users.map(user => ({
+      getUsers().map(user => ({
         id: user.id,
         email: user.email,
         name: user.name,
@@ -320,7 +393,7 @@ const server = createServer(async (request, response) => {
         return;
       }
 
-      if (users.some(user => user.email === email)) {
+      if (findUserByEmail(email)) {
         sendJson(response, 409, { message: 'A user with this email already exists.' });
         return;
       }
@@ -335,7 +408,10 @@ const server = createServer(async (request, response) => {
         access,
       };
 
-      users.push(createdUser);
+      db.prepare(
+        `INSERT INTO users (id, email, password, name, role, team, access)
+         VALUES (@id, @email, @password, @name, @role, @team, @access)`,
+      ).run(createdUser);
       sendJson(response, 201, { user: publicUser(createdUser) });
     } catch (error) {
       sendJson(response, 400, { message: error.message });
@@ -349,20 +425,21 @@ const server = createServer(async (request, response) => {
     if (!admin) return;
 
     const userId = decodeURIComponent(url.pathname.replace('/api/users/', ''));
-    const userIndex = users.findIndex(user => user.id === userId);
+    const user = findUserById(userId);
 
-    if (userIndex === -1) {
+    if (!user) {
       sendJson(response, 404, { message: 'User not found.' });
       return;
     }
 
-    if (users[userIndex].id === admin.id) {
+    if (user.id === admin.id) {
       sendJson(response, 400, { message: 'You cannot delete your own admin account.' });
       return;
     }
 
-    const [deletedUser] = users.splice(userIndex, 1);
-    sendJson(response, 200, { deletedUser: publicUser(deletedUser) });
+    db.prepare('DELETE FROM tasks WHERE assignee_id = ?').run(user.id);
+    db.prepare('DELETE FROM users WHERE id = ?').run(user.id);
+    sendJson(response, 200, { deletedUser: publicUser(user) });
     return;
   }
 
@@ -376,9 +453,9 @@ const server = createServer(async (request, response) => {
       const credentials = await readJson(request);
       const email = String(credentials.email ?? '').trim().toLowerCase();
       const password = String(credentials.password ?? '');
-      const user = users.find(candidate => candidate.email === email && candidate.password === password);
+      const user = findUserByEmail(email);
 
-      if (!user) {
+      if (!user || user.password !== password) {
         sendJson(response, 401, { message: 'Email or password is incorrect.' });
         return;
       }
@@ -443,7 +520,7 @@ const server = createServer(async (request, response) => {
       return;
     }
 
-    const assignedTasks = tasks.filter(task => task.assigneeId === user.id);
+    const assignedTasks = getTasksForUser(user.id);
 
     sendJson(response, 200, {
       owner: publicUser(user),
@@ -468,7 +545,7 @@ const server = createServer(async (request, response) => {
     if (!user) return;
 
     sendJson(response, 200, {
-      tasks: tasks.filter(task => task.assigneeId === user.id).map(publicTask),
+      tasks: getTasksForUser(user.id).map(publicTask),
     });
     return;
   }
@@ -490,21 +567,23 @@ const server = createServer(async (request, response) => {
         return;
       }
 
-      if (!users.some(candidate => candidate.id === assigneeId)) {
+      if (!findUserById(assigneeId)) {
         sendJson(response, 404, { message: 'Assignee not found.' });
         return;
       }
 
       const createdTask = {
-        id: `task-${nextTaskNumber}`,
+        id: `task-${Date.now()}`,
         title,
         assigneeId,
         priority,
         status: 'Open',
         dueDate,
       };
-      nextTaskNumber += 1;
-      tasks.push(createdTask);
+      db.prepare(
+        `INSERT INTO tasks (id, title, assignee_id, priority, status, due_date)
+         VALUES (@id, @title, @assigneeId, @priority, @status, @dueDate)`,
+      ).run(createdTask);
 
       sendJson(response, 201, { task: publicTask(createdTask) });
     } catch (error) {
@@ -519,7 +598,7 @@ const server = createServer(async (request, response) => {
     if (!user) return;
 
     const taskId = decodeURIComponent(url.pathname.split('/')[3]);
-    const task = tasks.find(candidate => candidate.id === taskId);
+    const task = getTaskById(taskId);
 
     if (!task) {
       sendJson(response, 404, { message: 'Task not found.' });
@@ -531,8 +610,8 @@ const server = createServer(async (request, response) => {
       return;
     }
 
-    task.status = 'Done';
-    sendJson(response, 200, { task: publicTask(task) });
+    db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run('Done', task.id);
+    sendJson(response, 200, { task: publicTask({ ...task, status: 'Done' }) });
     return;
   }
 
@@ -545,7 +624,7 @@ const server = createServer(async (request, response) => {
     }
 
     sendJson(response, 200, {
-      users: user.access === 'admin' ? users.map(publicUser) : [publicUser(user)],
+      users: user.access === 'admin' ? getUsers().map(publicUser) : [publicUser(user)],
     });
     return;
   }

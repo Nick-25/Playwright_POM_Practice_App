@@ -73,6 +73,16 @@ function authHeader() {
 }
 
 async function hydrateAuthFromCookie() {
+  const hasJustLoggedIn = sessionStorage.getItem('pom-practice-just-logged-in') === 'true';
+
+  if (window.location.pathname === '/' && !hasJustLoggedIn) {
+    clearAuth();
+    await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+    return;
+  }
+
+  sessionStorage.removeItem('pom-practice-just-logged-in');
+
   if (getAuth()?.token) return;
 
   try {
@@ -347,6 +357,7 @@ if (signInForm) {
       });
 
       setAuth(auth);
+      sessionStorage.setItem('pom-practice-just-logged-in', 'true');
       window.location.href = '/';
     } catch (error) {
       status.textContent = error.message;

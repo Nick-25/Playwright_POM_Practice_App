@@ -7,6 +7,7 @@ standard Playwright Test, a real local app, and Page Object Model classes.
 
 - A tiny Node server in `server.js`
 - A static sample app in `app/`
+- Local SQLite persistence in `data/app.db`
 - Playwright config with `webServer`, `baseURL`, and desktop browser projects
 - Page objects in `tests/pages/`
 - Example specs for tasks, sign-in validation, and profile API loading
@@ -24,6 +25,17 @@ The app runs at `http://127.0.0.1:3000`.
 
 Playwright starts the app automatically when you run `npm test`, so you only
 need `npm run start` when you want to click around manually.
+
+## Local Data
+
+Users and tasks are stored in a local SQLite database at `data/app.db`.
+The database is created and seeded automatically when the server starts.
+
+The database file is ignored by Git, so API-created users and tasks persist on
+your machine across server restarts but are not pushed to GitHub.
+
+To reset local data, stop the server and delete `data/app.db`. The next server
+start will recreate the database with the seeded users and tasks.
 
 ## Useful Playwright Scripts
 

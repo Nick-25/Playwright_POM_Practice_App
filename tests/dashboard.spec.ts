@@ -1,12 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/pages.js';
 import { users } from './fixtures/users.js';
-import { DashboardPage } from './pages/DashboardPage.js';
-import { SignInPage } from './pages/SignInPage.js';
 
 test.describe('dashboard welcome page', () => {
-  test('shows only the public welcome page with login actions when signed out', async ({ page }) => {
-    const dashboardPage = new DashboardPage(page);
-
+  test('shows only the public welcome page with login actions when signed out', async ({ page, dashboardPage }) => {
     await dashboardPage.goto();
     await dashboardPage.expectPublicWelcome();
 
@@ -16,9 +12,7 @@ test.describe('dashboard welcome page', () => {
     await expect(page.getByText('Lorem ipsum dolor sit amet')).toBeVisible();
   });
 
-  test('opens the login page from the hero login button', async ({ page }) => {
-    const dashboardPage = new DashboardPage(page);
-
+  test('opens the login page from the hero login button', async ({ page, dashboardPage }) => {
     await dashboardPage.goto();
     await dashboardPage.heroLogin.click();
 
@@ -26,10 +20,7 @@ test.describe('dashboard welcome page', () => {
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
   });
 
-  test('shows dashboard metrics after a real user signs in', async ({ page }) => {
-    const signInPage = new SignInPage(page);
-    const dashboardPage = new DashboardPage(page);
-
+  test('shows dashboard metrics after a real user signs in', async ({ page, dashboardPage, signInPage }) => {
     await signInPage.goto();
     await signInPage.signIn(users.nick.email, users.nick.password);
     await expect(page).toHaveURL('/');
@@ -44,10 +35,7 @@ test.describe('dashboard welcome page', () => {
     await expect(dashboardPage.activityItems).toHaveCount(3);
   });
 
-  test('logs out and returns to the public welcome page', async ({ page }) => {
-    const signInPage = new SignInPage(page);
-    const dashboardPage = new DashboardPage(page);
-
+  test('logs out and returns to the public welcome page', async ({ page, dashboardPage, signInPage }) => {
     await signInPage.goto();
     await signInPage.signIn(users.ada.email, users.ada.password);
     await expect(page).toHaveURL('/');
