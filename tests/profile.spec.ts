@@ -1,17 +1,17 @@
 import { test } from '@playwright/test';
 import { users } from './fixtures/users.js';
+import { signInWithStoredSession } from './helpers/auth.js';
 import { ProfilePage } from './pages/ProfilePage.js';
 import { SignInPage } from './pages/SignInPage.js';
 
 test.describe('profile', () => {
-  test('requires a signed-in user before loading profile data', async ({ page }) => {
+  test('is available with a stored signed-in session', async ({ page }) => {
+    await signInWithStoredSession(page, 'nick');
     const profilePage = new ProfilePage(page);
 
     await profilePage.goto();
-    await profilePage.expectSession('Not signed in.');
-    await profilePage.loadProfile();
 
-    await profilePage.expectStatus('Please sign in to load your profile.');
+    await profilePage.expectSession(`Signed in as ${users.nick.name}.`);
   });
 
   test('loads the signed-in user profile from the app API', async ({ page }) => {
@@ -20,7 +20,6 @@ test.describe('profile', () => {
 
     await signInPage.goto();
     await signInPage.signIn(users.ada.email, users.ada.password);
-    await signInPage.expectSignedInAs(users.ada.name);
 
     await profilePage.goto();
     await profilePage.expectSession(`Signed in as ${users.ada.name}.`);
@@ -41,7 +40,6 @@ test.describe('profile', () => {
 
     await signInPage.goto();
     await signInPage.signIn(users.grace.email, users.grace.password);
-    await signInPage.expectSignedInAs(users.grace.name);
 
     await profilePage.goto();
     await profilePage.loadProfile();

@@ -3,14 +3,28 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export class TodoPage {
   readonly heading: Locator;
   readonly newTaskInput: Locator;
+  readonly assigneeSelect: Locator;
+  readonly prioritySelect: Locator;
+  readonly dueDateInput: Locator;
   readonly addButton: Locator;
   readonly taskItems: Locator;
+  readonly searchInput: Locator;
+  readonly statusFilter: Locator;
+  readonly priorityFilter: Locator;
+  readonly summary: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { name: 'Team Tasks' });
     this.newTaskInput = page.getByPlaceholder('Write a task');
+    this.assigneeSelect = page.getByLabel('Assignee');
+    this.prioritySelect = page.getByLabel('Priority').first();
+    this.dueDateInput = page.getByLabel('Due date');
     this.addButton = page.getByRole('button', { name: 'Add' });
-    this.taskItems = page.getByRole('listitem');
+    this.taskItems = page.getByTestId('task-row');
+    this.searchInput = page.getByTestId('task-search');
+    this.statusFilter = page.getByTestId('status-filter');
+    this.priorityFilter = page.getByTestId('priority-filter');
+    this.summary = page.getByTestId('task-summary');
   }
 
   async goto() {
@@ -26,11 +40,47 @@ export class TodoPage {
     await this.addButton.click();
   }
 
-  taskCheckbox(taskName: string) {
-    return this.page.getByLabel(taskName);
+  async addDetailedTask(task: { title: string; assignee: string; priority: string; dueDate: string }) {
+    await this.newTaskInput.fill(task.title);
+    await this.assigneeSelect.selectOption({ label: task.assignee });
+    await this.prioritySelect.selectOption(task.priority);
+    await this.dueDateInput.fill(task.dueDate);
+    await this.addButton.click();
+  }
+
+  taskRow(taskName: string) {
+    return this.taskItems.filter({ hasText: taskName });
+  }
+
+  taskStatus(taskName: string) {
+    return this.taskRow(taskName).locator('td').nth(3);
+  }
+
+  async completeTask(taskName: string) {
+    await this.page.getByRole('button', { name: `Mark ${taskName} complete` }).click();
+  }
+
+  async searchFor(text: string) {
+    await this.searchInput.fill(text);
+  }
+
+  async filterByStatus(status: string) {
+    await this.statusFilter.selectOption(status);
+  }
+
+  async filterByPriority(priority: string) {
+    await this.priorityFilter.selectOption(priority);
   }
 
   async expectTaskVisible(taskName: string) {
-    await expect(this.page.getByText(taskName)).toBeVisible();
+    await expect(this.taskRow(taskName)).toBeVisible();
+  }
+
+  async expectTaskHidden(taskName: string) {
+    await expect(this.taskRow(taskName)).toHaveCount(0);
+  }
+
+  async expectSummary(message: string) {
+    await expect(this.summary).toHaveText(message);
   }
 }

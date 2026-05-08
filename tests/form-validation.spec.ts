@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { users } from './fixtures/users';
-import { SignInPage } from './pages/SignInPage';
+import { users } from './fixtures/users.js';
+import { SignInPage } from './pages/SignInPage.js';
 
 test.describe('sign in', () => {
   test('lists the real users available in the practice app', async ({ page }) => {
@@ -11,6 +11,8 @@ test.describe('sign in', () => {
     await expect(signInPage.sampleUsers).toHaveText([
       `${users.ada.name} (${users.ada.email})`,
       `${users.grace.name} (${users.grace.email})`,
+      `${users.nick.name} (${users.nick.email})`,
+      `${users.admin.name} (${users.admin.email})`,
     ]);
   });
 
@@ -44,11 +46,14 @@ test.describe('sign in', () => {
     await signInPage.goto();
     await signInPage.signIn(users.ada.email, users.ada.password);
 
-    await signInPage.expectSignedInAs(users.ada.name);
+    await expect(page).toHaveURL('/');
     await expect
       .poll(async () =>
-        page.evaluate(() => JSON.parse(localStorage.getItem('pom-practice-auth') ?? '{}').user?.email),
+        page.evaluate(() => {
+          const auth = JSON.parse(localStorage.getItem('pom-practice-auth') ?? '{}');
+          return { email: auth.user?.email, tokenParts: auth.token?.split('.').length };
+        }),
       )
-      .toBe(users.ada.email);
+      .toEqual({ email: users.ada.email, tokenParts: 3 });
   });
 });

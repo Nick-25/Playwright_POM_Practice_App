@@ -42,8 +42,4 @@ export class SignInPage {
       await expect(this.passwordError).toHaveText(errors.password);
     }
   }
-
-  async expectSignedInAs(name: string) {
-    await expect(this.status).toHaveText(`Signed in as ${name}.`);
-  }
 }

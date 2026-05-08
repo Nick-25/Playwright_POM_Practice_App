@@ -1,5 +1,0 @@
-To start my project:
-npm run start
-
-To view the project:
-http://127.0.0.1:3000

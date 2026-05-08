@@ -1,15 +1,19 @@
 import { expect, test } from '@playwright/test';
-import { TodoPage } from './pages/TodoPage';
+import { signInWithStoredSession } from './helpers/auth.js';
+import { TodoPage } from './pages/TodoPage.js';
 
 test.describe('todo list', () => {
+  test.beforeEach(async ({ page }) => {
+    await signInWithStoredSession(page);
+  });
+
   test('shows existing tasks', async ({ page }) => {
     const todoPage = new TodoPage(page);
 
     await todoPage.goto();
     await todoPage.expectLoaded();
 
-    // POM keeps selector knowledge in one class while tests describe behavior.
-    await expect(todoPage.taskItems).toHaveCount(2);
+    await expect(todoPage.taskItems).not.toHaveCount(0);
     await todoPage.expectTaskVisible('Review pull request');
   });
 
@@ -17,10 +21,10 @@ test.describe('todo list', () => {
     const todoPage = new TodoPage(page);
 
     await todoPage.goto();
+    const initialCount = await todoPage.taskItems.count();
     await todoPage.addTask('  Ship Playwright setup  ');
 
-    // Web-first assertions automatically wait until the UI reaches this state.
-    await expect(todoPage.taskItems).toHaveCount(3);
+    await expect(todoPage.taskItems).toHaveCount(initialCount + 1);
     await todoPage.expectTaskVisible('Ship Playwright setup');
     await expect(todoPage.newTaskInput).toHaveValue('');
   });
@@ -29,17 +33,31 @@ test.describe('todo list', () => {
     const todoPage = new TodoPage(page);
 
     await todoPage.goto();
+    const initialCount = await todoPage.taskItems.count();
     await todoPage.addTask('   ');
 
-    await expect(todoPage.taskItems).toHaveCount(2);
+    await expect(todoPage.taskItems).toHaveCount(initialCount);
   });
 
   test('marks a task complete', async ({ page }) => {
     const todoPage = new TodoPage(page);
 
     await todoPage.goto();
-    await todoPage.taskCheckbox('Review pull request').check();
+    await todoPage.addTask('Task to complete');
+    await todoPage.completeTask('Task to complete');
 
-    await expect(todoPage.taskCheckbox('Review pull request')).toBeChecked();
+    await expect(todoPage.taskStatus('Task to complete')).toHaveText('Done');
+  });
+
+  test('filters the logged-in user tasks by search text and priority', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+
+    await todoPage.goto();
+    await todoPage.searchFor('review');
+    await todoPage.filterByPriority('High');
+
+    await todoPage.expectSummary('1 task shown');
+    await todoPage.expectTaskVisible('Review pull request');
+    await todoPage.expectTaskHidden('Update test plan');
   });
 });

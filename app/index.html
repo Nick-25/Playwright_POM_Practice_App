@@ -7,21 +7,86 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header>
+    <header class="site-header">
+      <div class="utility-bar">
+        <div class="shell utility-content">
+          <span>Official Testing Portal</span>
+          <span>Practice environment</span>
+        </div>
+      </div>
       <div class="shell topbar">
-        <p class="brand">Playwright POM Practice App</p>
+        <a class="brand" href="/">
+          <span class="brand-mark">NTP</span>
+          <span>Nicks Testing Portal</span>
+        </a>
         <nav aria-label="Primary">
-          <a href="/todos">Tasks</a>
-          <a href="/sign-in">Sign in</a>
-          <a href="/profile">Profile</a>
+          <a class="auth-only is-hidden" href="/">Home</a>
+          <a class="auth-only is-hidden" href="/todos">Tasks</a>
+          <a class="auth-only is-hidden" href="/profile">Profile</a>
+          <a class="nav-button" href="/sign-in" data-testid="header-login">Log in</a>
+          <button class="nav-button is-hidden" data-testid="header-logout" data-logout>Log out</button>
         </nav>
       </div>
     </header>
-    <main class="shell">
-      <section class="panel">
-        <h1>Playwright POM Practice App</h1>
-        <p>Use the navigation links to open the pages covered by the tests.</p>
+    <main>
+      <section class="hero" data-testid="public-welcome">
+        <div class="shell hero-grid">
+          <div>
+            <p class="eyebrow">Welcome</p>
+            <h1>Welcome to Nicks Testing Portal.</h1>
+            <p class="hero-copy">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante
+              venenatis dapibus posuere velit aliquet. Sed posuere consectetur est at lobortis.
+            </p>
+            <div class="hero-actions">
+              <a class="button-link" href="/sign-in" data-testid="hero-login">Log in</a>
+            </div>
+          </div>
+          <div class="welcome-image" aria-label="Generic workspace image">
+            <img
+              src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=80"
+              alt="Modern office workspace with desks and windows"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="shell app-dashboard is-hidden" data-testid="dashboard">
+        <div class="auth-banner" data-testid="authenticated-banner">
+          <div>
+            <p class="eyebrow">Authenticated workspace</p>
+            <p data-testid="authenticated-user">You are logged in.</p>
+          </div>
+        </div>
+        <div class="page-heading">
+          <div>
+            <h1>Dashboard</h1>
+          </div>
+          <a class="button-link" href="/todos">Open tasks</a>
+        </div>
+        <section class="panel">
+          <p data-testid="dashboard-welcome">Sign in to load your workspace.</p>
+          <button data-testid="load-dashboard">Load dashboard</button>
+          <p role="status"></p>
+          <div class="metric-grid" aria-label="Workspace metrics">
+            <article class="metric">
+              <span>Open tasks</span>
+              <strong data-testid="metric-open">0</strong>
+            </article>
+            <article class="metric">
+              <span>Blocked</span>
+              <strong data-testid="metric-blocked">0</strong>
+            </article>
+            <article class="metric">
+              <span>High priority</span>
+              <strong data-testid="metric-high-priority">0</strong>
+            </article>
+          </div>
+          <h2>Recent activity</h2>
+          <ul data-testid="activity-list"></ul>
+        </section>
       </section>
     </main>
+    <script src="/app.js"></script>
   </body>
 </html>

@@ -7,13 +7,18 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header>
+    <header class="site-header">
       <div class="shell topbar">
-        <p class="brand">Playwright POM Practice App</p>
+        <a class="brand" href="/">
+          <span class="brand-mark">QA</span>
+          <span>Nicks Testing Portal</span>
+        </a>
         <nav aria-label="Primary">
-          <a href="/todos">Tasks</a>
-          <a href="/sign-in">Sign in</a>
-          <a href="/profile">Profile</a>
+          <a class="auth-only is-hidden" href="/">Home</a>
+          <a class="auth-only is-hidden" href="/todos">Tasks</a>
+          <a class="auth-only is-hidden" href="/profile">Profile</a>
+          <a class="nav-button" href="/sign-in" data-testid="header-login">Log in</a>
+          <button class="nav-button is-hidden" data-testid="header-logout" data-logout>Log out</button>
         </nav>
       </div>
     </header>

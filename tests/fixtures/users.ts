@@ -1,17 +1,21 @@
 export const users = {
   ada: {
+    id: 'ada',
     email: 'ada@example.com',
     password: 'lovelace-123',
     name: 'Ada Lovelace',
     role: 'Automation Engineer',
     team: 'Quality Platform',
+    access: 'user',
   },
   grace: {
+    id: 'grace',
     email: 'grace@example.com',
     password: 'hopper-123',
     name: 'Grace Hopper',
     role: 'Test Architect',
     team: 'Developer Experience',
+    access: 'user',
   },
   nick: {
     id: 'nick',
@@ -20,5 +24,15 @@ export const users = {
     name: 'Nick Boegel',
     role: 'Super User',
     team: 'Analytics',
-  }
+    access: 'user',
+  },
+  admin: {
+    id: 'admin',
+    email: 'admin@example.com',
+    password: 'admin-123',
+    name: 'Admin User',
+    role: 'Portal Administrator',
+    team: 'Platform Operations',
+    access: 'admin',
+  },
 };

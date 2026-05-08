@@ -7,13 +7,18 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header>
+    <header class="site-header">
       <div class="shell topbar">
-        <p class="brand">Playwright POM Practice App</p>
+        <a class="brand" href="/">
+          <span class="brand-mark">NTP</span>
+          <span>Nicks Testing Portal</span>
+        </a>
         <nav aria-label="Primary">
-          <a href="/todos">Tasks</a>
-          <a href="/sign-in">Sign in</a>
-          <a href="/profile">Profile</a>
+          <a class="auth-only is-hidden" href="/">Home</a>
+          <a class="auth-only is-hidden" href="/todos">Tasks</a>
+          <a class="auth-only is-hidden" href="/profile">Profile</a>
+          <a class="nav-button" href="/sign-in" data-testid="header-login">Log in</a>
+          <button class="nav-button is-hidden" data-testid="header-logout" data-logout>Log out</button>
         </nav>
       </div>
     </header>
@@ -22,19 +27,70 @@
         <h1>Team Tasks</h1>
         <form aria-label="Add a task" data-testid="todo-form">
           <label>
-            New task
+            Task title
             <input name="task" placeholder="Write a task" />
+          </label>
+          <label>
+            Assignee
+            <select name="assignee" data-testid="task-assignee"></select>
+          </label>
+          <label>
+            Priority
+            <select name="priority">
+              <option>Medium</option>
+              <option>High</option>
+              <option>Low</option>
+            </select>
+          </label>
+          <label>
+            Due date
+            <input name="dueDate" type="date" />
           </label>
           <button>Add</button>
         </form>
-        <ul aria-label="Task list" data-testid="task-list">
-          <li>
-            <label><input type="checkbox" /> Review pull request</label>
-          </li>
-          <li>
-            <label><input type="checkbox" /> Update test plan</label>
-          </li>
-        </ul>
+        <div class="filters" aria-label="Task filters">
+          <label>
+            Search
+            <input data-testid="task-search" placeholder="Search tasks" />
+          </label>
+          <label>
+            Status
+            <select data-testid="status-filter">
+              <option value="All">All</option>
+              <option>Open</option>
+              <option>In progress</option>
+              <option>Blocked</option>
+              <option>Done</option>
+            </select>
+          </label>
+          <label>
+            Priority
+            <select data-testid="priority-filter">
+              <option value="All">All</option>
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+            </select>
+          </label>
+        </div>
+        <p role="status"></p>
+        <p data-testid="task-summary">0 tasks shown</p>
+        <table>
+          <caption>
+            Task list
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Task</th>
+              <th scope="col">Assignee</th>
+              <th scope="col">Priority</th>
+              <th scope="col">Status</th>
+              <th scope="col">Due</th>
+              <th scope="col">Action</th>
+            </tr>
+          </thead>
+          <tbody data-testid="task-list"></tbody>
+        </table>
       </section>
     </main>
     <script src="/app.js"></script>

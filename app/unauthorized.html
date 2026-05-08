@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Unauthorized</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="shell topbar">
+        <a class="brand" href="/">
+          <span class="brand-mark">NTP</span>
+          <span>Nicks Testing Portal</span>
+        </a>
+      </div>
+    </header>
+    <main class="shell">
+      <section class="panel unauthorized-panel" data-testid="unauthorized-page">
+        <p class="eyebrow">Unauthorized</p>
+        <h1>You need to log in first.</h1>
+        <p>
+          This page is only available after signing in. Return to the welcome page to start again.
+        </p>
+        <a class="button-link" href="/" data-testid="back-to-welcome">Back to welcome page</a>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
