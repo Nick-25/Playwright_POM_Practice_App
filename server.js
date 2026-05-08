@@ -9,6 +9,7 @@ const port = Number(process.env.PORT ?? 3000);
 const appRoot = join(process.cwd(), 'app');
 const dbPath = join(process.cwd(), 'data', 'app.db');
 const jwtSecret = process.env.JWT_SECRET ?? 'local-development-secret';
+const postmanSigningKey = process.env.POSTMAN_SIGNING_KEY ?? 'local-postman-key';
 const sessionMaxAgeSeconds = 60 * 60 * 4;
 
 mkdirSync(dirname(dbPath), { recursive: true });
@@ -201,6 +202,33 @@ function createJwt(user) {
   return `${unsignedToken}.${signJwtPart(unsignedToken)}`;
 }
 
+function createDevJwt(user, expiresInHours = 24) {
+  const now = Math.floor(Date.now() / 1000);
+  const maxHours = 24 * 7;
+  const neverExpires = expiresInHours === 'never' || expiresInHours === 0 || expiresInHours === null;
+  const requestedHours = Number(expiresInHours);
+  const safeHours = Number.isFinite(requestedHours) ? Math.min(Math.max(requestedHours, 1), maxHours) : 24;
+  const claims = {
+    sub: user.id,
+    email: user.email,
+    access: user.access,
+    iat: now,
+  };
+
+  if (!neverExpires) {
+    claims.exp = now + safeHours * 60 * 60;
+  }
+
+  const header = base64UrlEncode({ alg: 'HS256', typ: 'JWT' });
+  const payload = base64UrlEncode(claims);
+  const unsignedToken = `${header}.${payload}`;
+
+  return {
+    token: `${unsignedToken}.${signJwtPart(unsignedToken)}`,
+    expiresIn: neverExpires ? null : safeHours * 60 * 60,
+  };
+}
+
 function verifyJwt(token) {
   const [header, payload, signature] = String(token ?? '').split('.');
 
@@ -217,7 +245,7 @@ function verifyJwt(token) {
   try {
     const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
 
-    if (!claims.exp || claims.exp < Math.floor(Date.now() / 1000)) {
+    if (claims.exp && claims.exp < Math.floor(Date.now() / 1000)) {
       return null;
     }
 
@@ -359,17 +387,20 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
 
   if (url.pathname === '/api/users' && request.method === 'GET') {
+    const sampleUserIds = new Set(['ada', 'grace', 'nick']);
     sendJson(
       response,
       200,
-      getUsers().map(user => ({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        team: user.team,
-        access: user.access,
-      })),
+      getUsers()
+        .filter(user => sampleUserIds.has(user.id))
+        .map(user => ({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          team: user.team,
+          access: user.access,
+        })),
     );
     return;
   }
@@ -465,6 +496,38 @@ const server = createServer(async (request, response) => {
       sendJson(response, 200, {
         token,
         expiresIn: sessionMaxAgeSeconds,
+        user: publicUser(user),
+      });
+    } catch (error) {
+      sendJson(response, 400, { message: error.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/dev-token') {
+    if (request.method !== 'POST') {
+      sendJson(response, 405, { message: 'Method not allowed' });
+      return;
+    }
+
+    if (request.headers['x-signing-key'] !== postmanSigningKey) {
+      sendJson(response, 401, { message: 'A valid signing key is required.' });
+      return;
+    }
+
+    try {
+      const body = await readJson(request);
+      const email = String(body.email ?? '').trim().toLowerCase();
+      const user = findUserByEmail(email);
+
+      if (!user) {
+        sendJson(response, 404, { message: 'User not found.' });
+        return;
+      }
+
+      const devToken = createDevJwt(user, body.expiresInHours);
+      sendJson(response, 200, {
+        ...devToken,
         user: publicUser(user),
       });
     } catch (error) {

@@ -78,6 +78,42 @@ Use the returned token for protected API calls:
 Authorization: Bearer YOUR_TOKEN_HERE
 ```
 
+For Postman convenience, you can mint a token with a local signing key instead
+of logging in through the UI. The default local key is `local-postman-key`.
+You can override it when starting the server:
+
+```powershell
+$env:POSTMAN_SIGNING_KEY="your-local-key"
+npm run start
+```
+
+Then mint a token:
+
+```http
+POST http://127.0.0.1:3000/api/dev-token
+x-signing-key: local-postman-key
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "expiresInHours": 48
+}
+```
+
+`expiresInHours` is optional. Dev tokens default to 24 hours and are capped at
+7 days. For local Postman testing, use `"expiresInHours": "never"` to create a
+non-expiring token.
+
+Tokens remain valid after server restarts as long as `JWT_SECRET` stays the
+same and the token has not expired. Non-expiring dev tokens remain valid until
+you change `JWT_SECRET` or delete the user. The default local JWT secret is
+stable for this practice app, but you can set your own:
+
+```powershell
+$env:JWT_SECRET="your-local-jwt-secret"
+npm run start
+```
+
 Log out clears the browser cookie:
 
 ```http

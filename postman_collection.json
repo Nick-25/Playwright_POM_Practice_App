@@ -19,6 +19,10 @@
       "value": ""
     },
     {
+      "key": "signingKey",
+      "value": "local-postman-key"
+    },
+    {
       "key": "createdUserId",
       "value": ""
     },
@@ -100,6 +104,86 @@
               "raw": "{{baseUrl}}/api/login",
               "host": ["{{baseUrl}}"],
               "path": ["api", "login"]
+            }
+          }
+        },
+        {
+          "name": "Mint Admin Token With Signing Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('dev token created', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('adminToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-signing-key",
+                "value": "{{signingKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"expiresInHours\": \"never\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dev-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dev-token"]
+            }
+          }
+        },
+        {
+          "name": "Mint Regular Token With Signing Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('dev token created', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('token', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-signing-key",
+                "value": "{{signingKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ada@example.com\",\n  \"expiresInHours\": \"never\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dev-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dev-token"]
             }
           }
         },

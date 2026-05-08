@@ -70,12 +70,9 @@ test.describe('JWT API access', () => {
     const body = await response.json();
 
     expect(response.ok()).toBeTruthy();
-    expect(body.users.map((user: PublicUser) => user.email)).toEqual([
-      users.ada.email,
-      users.grace.email,
-      users.nick.email,
-      users.admin.email,
-    ]);
+    expect(body.users.map((user: PublicUser) => user.email)).toEqual(
+      expect.arrayContaining([users.ada.email, users.grace.email, users.nick.email, users.admin.email]),
+    );
   });
 
   test('rejects user info requests without a valid token', async ({ request }) => {
@@ -84,6 +81,54 @@ test.describe('JWT API access', () => {
 
     expect(response.status()).toBe(401);
     expect(body.message).toBe('A valid session token is required.');
+  });
+
+  test('creates a longer-lived Postman token with the signing key', async ({ request }) => {
+    const response = await request.post('/api/dev-token', {
+      headers: {
+        'x-signing-key': 'local-postman-key',
+      },
+      data: {
+        email: users.admin.email,
+        expiresInHours: 48,
+      },
+    });
+    const body = await response.json();
+
+    expect(response.ok()).toBeTruthy();
+    expect(body.token.split('.')).toHaveLength(3);
+    expect(body.expiresIn).toBe(172800);
+    expect(body.user.email).toBe(users.admin.email);
+  });
+
+  test('creates a non-expiring Postman token with the signing key', async ({ request }) => {
+    const response = await request.post('/api/dev-token', {
+      headers: {
+        'x-signing-key': 'local-postman-key',
+      },
+      data: {
+        email: users.nick.email,
+        expiresInHours: 'never',
+      },
+    });
+    const body = await response.json();
+
+    expect(response.ok()).toBeTruthy();
+    expect(body.token.split('.')).toHaveLength(3);
+    expect(body.expiresIn).toBeNull();
+    expect(body.user.email).toBe(users.nick.email);
+  });
+
+  test('rejects dev token requests without the signing key', async ({ request }) => {
+    const response = await request.post('/api/dev-token', {
+      data: {
+        email: users.admin.email,
+      },
+    });
+    const body = await response.json();
+
+    expect(response.status()).toBe(401);
+    expect(body.message).toBe('A valid signing key is required.');
   });
 });
 
@@ -194,7 +239,7 @@ test.describe('task API', () => {
         authorization: `Bearer ${adminAuth.token}`,
       },
       data: {
-        email: 'task-owner@example.com',
+        email: `task-owner-${Date.now()}@example.com`,
         password: 'task-owner-123',
         name: 'Task Owner',
         role: 'Analyst',

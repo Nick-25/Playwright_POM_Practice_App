@@ -9,7 +9,6 @@ test.describe('sign in', () => {
       `${users.ada.name} (${users.ada.email})`,
       `${users.grace.name} (${users.grace.email})`,
       `${users.nick.name} (${users.nick.email})`,
-      `${users.admin.name} (${users.admin.email})`,
     ]);
   });
 
