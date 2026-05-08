@@ -399,9 +399,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/tasks",
+              "raw": "{{baseUrl}}/api/tasks?page=1&pageSize=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tasks"]
+              "path": ["api", "tasks"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
             }
           }
         },

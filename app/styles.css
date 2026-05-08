@@ -379,10 +379,31 @@ dt {
   font-size: 28px;
 }
 
-table {
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.table-header p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.table-wrap {
+  overflow: hidden;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.data-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 12px;
 }
 
 caption {
@@ -394,19 +415,36 @@ caption {
 
 th,
 td {
-  padding: 12px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: middle;
 }
 
 th {
+  background: #f1f6fb;
   color: var(--muted);
   font-size: 14px;
+  text-transform: uppercase;
+}
+
+tbody tr:hover {
+  background: #fbfcfe;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 td select {
   width: 150px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .is-hidden {
@@ -445,7 +483,7 @@ td select {
     font-size: 38px;
   }
 
-  table {
+  .table-wrap {
     display: block;
     overflow-x: auto;
   }

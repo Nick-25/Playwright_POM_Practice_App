@@ -157,29 +157,21 @@ if (todoForm) {
   const statusFilter = document.querySelector('[data-testid="status-filter"]');
   const priorityFilter = document.querySelector('[data-testid="priority-filter"]');
   const taskSummary = document.querySelector('[data-testid="task-summary"]');
+  const taskPageSummary = document.querySelector('[data-testid="task-page-summary"]');
+  const previousPageButton = document.querySelector('[data-testid="previous-page"]');
+  const nextPageButton = document.querySelector('[data-testid="next-page"]');
   const status = document.querySelector('[role="status"]');
   let tasks = [];
-
-  function filteredTasks() {
-    const search = taskSearch.value.trim().toLowerCase();
-
-    return tasks.filter(task => {
-      const matchesSearch =
-        !search ||
-        task.title.toLowerCase().includes(search) ||
-        task.assignee.toLowerCase().includes(search);
-      const matchesStatus = statusFilter.value === 'All' || task.status === statusFilter.value;
-      const matchesPriority = priorityFilter.value === 'All' || task.priority === priorityFilter.value;
-
-      return matchesSearch && matchesStatus && matchesPriority;
-    });
-  }
+  const pagination = {
+    page: 1,
+    pageSize: 10,
+    total: 0,
+    totalPages: 1,
+  };
 
   function renderTasks() {
-    const visibleTasks = filteredTasks();
-
     taskList.replaceChildren(
-      ...visibleTasks.map(task => {
+      ...tasks.map(task => {
         const row = document.createElement('tr');
         row.dataset.testid = 'task-row';
         row.dataset.taskId = task.id;
@@ -225,8 +217,12 @@ if (todoForm) {
       }),
     );
 
-    const label = visibleTasks.length === 1 ? 'task' : 'tasks';
-    taskSummary.textContent = `${visibleTasks.length} ${label} shown`;
+    const visibleLabel = tasks.length === 1 ? 'task' : 'tasks';
+    const totalLabel = pagination.total === 1 ? 'task' : 'tasks';
+    taskSummary.textContent = `${tasks.length} ${visibleLabel} shown of ${pagination.total} ${totalLabel}`;
+    taskPageSummary.textContent = `Page ${pagination.page} of ${pagination.totalPages}`;
+    previousPageButton.disabled = pagination.page <= 1;
+    nextPageButton.disabled = pagination.page >= pagination.totalPages;
   }
 
   async function loadAssignees() {
@@ -249,10 +245,31 @@ if (todoForm) {
 
   async function loadTasks() {
     try {
-      const body = await fetchJson('/api/tasks', {
+      const params = new URLSearchParams({
+        page: String(pagination.page),
+        pageSize: String(pagination.pageSize),
+      });
+
+      if (taskSearch.value.trim()) {
+        params.set('q', taskSearch.value.trim());
+      }
+
+      if (statusFilter.value !== 'All') {
+        params.set('status', statusFilter.value);
+      }
+
+      if (priorityFilter.value !== 'All') {
+        params.set('priority', priorityFilter.value);
+      }
+
+      const body = await fetchJson(`/api/tasks?${params}`, {
         headers: authHeader(),
       });
       tasks = body.tasks;
+      pagination.page = body.page;
+      pagination.pageSize = body.pageSize;
+      pagination.total = body.total;
+      pagination.totalPages = body.totalPages;
       renderTasks();
     } catch (error) {
       status.textContent = error.message;
@@ -279,20 +296,38 @@ if (todoForm) {
 
       const currentUserId = getAuth()?.user?.id;
       if (body.task.assigneeId === currentUserId) {
-        tasks = [...tasks, body.task];
+        pagination.page = 1;
+        await loadTasks();
       }
       todoForm.reset();
       assigneeInput.value = currentUserId;
       status.textContent = 'Task created.';
-      renderTasks();
     } catch (error) {
       status.textContent = error.message;
     }
   });
 
   [taskSearch, statusFilter, priorityFilter].forEach(control => {
-    control.addEventListener('input', renderTasks);
-    control.addEventListener('change', renderTasks);
+    control.addEventListener('input', () => {
+      pagination.page = 1;
+      loadTasks();
+    });
+    control.addEventListener('change', () => {
+      pagination.page = 1;
+      loadTasks();
+    });
+  });
+
+  previousPageButton.addEventListener('click', () => {
+    if (pagination.page <= 1) return;
+    pagination.page -= 1;
+    loadTasks();
+  });
+
+  nextPageButton.addEventListener('click', () => {
+    if (pagination.page >= pagination.totalPages) return;
+    pagination.page += 1;
+    loadTasks();
   });
 
   initializeAuthState().then(async () => {

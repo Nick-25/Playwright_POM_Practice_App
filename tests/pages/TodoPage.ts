@@ -12,6 +12,9 @@ export class TodoPage {
   readonly statusFilter: Locator;
   readonly priorityFilter: Locator;
   readonly summary: Locator;
+  readonly pageSummary: Locator;
+  readonly previousPageButton: Locator;
+  readonly nextPageButton: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { name: 'Team Tasks' });
@@ -25,6 +28,9 @@ export class TodoPage {
     this.statusFilter = page.getByTestId('status-filter');
     this.priorityFilter = page.getByTestId('priority-filter');
     this.summary = page.getByTestId('task-summary');
+    this.pageSummary = page.getByTestId('task-page-summary');
+    this.previousPageButton = page.getByTestId('previous-page');
+    this.nextPageButton = page.getByTestId('next-page');
   }
 
   async goto() {
@@ -86,5 +92,9 @@ export class TodoPage {
 
   async expectSummary(message: string) {
     await expect(this.summary).toHaveText(message);
+  }
+
+  async expectPageSummary(message: string) {
+    await expect(this.pageSummary).toHaveText(message);
   }
 }

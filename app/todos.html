@@ -74,23 +74,32 @@
           </label>
         </div>
         <p role="status"></p>
-        <p data-testid="task-summary">0 tasks shown</p>
-        <table>
-          <caption>
-            Task list
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Task</th>
-              <th scope="col">Assignee</th>
-              <th scope="col">Priority</th>
-              <th scope="col">Status</th>
-              <th scope="col">Due</th>
-              <th scope="col">Action</th>
-            </tr>
-          </thead>
-          <tbody data-testid="task-list"></tbody>
-        </table>
+        <div class="table-header">
+          <p data-testid="task-summary">0 tasks shown</p>
+          <p data-testid="task-page-summary">Page 1 of 1</p>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <caption>
+              Task list
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Task</th>
+                <th scope="col">Assignee</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Status</th>
+                <th scope="col">Due</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody data-testid="task-list"></tbody>
+          </table>
+        </div>
+        <div class="pagination" aria-label="Task pagination">
+          <button type="button" data-testid="previous-page">Previous</button>
+          <button type="button" data-testid="next-page">Next</button>
+        </div>
       </section>
     </main>
     <script src="/app.js"></script>

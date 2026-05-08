@@ -317,4 +317,43 @@ test.describe('task API', () => {
     expect(completeResponse.ok()).toBeTruthy();
     expect(completeBody.task.status).toBe('Done');
   });
+
+  test('paginates task API results', async ({ request }) => {
+    const adminAuth = await login(request, users.admin);
+
+    for (let index = 0; index < 12; index += 1) {
+      await request.post('/api/tasks', {
+        headers: {
+          authorization: `Bearer ${adminAuth.token}`,
+        },
+        data: {
+          title: `API paginated task ${Date.now()} ${index}`,
+          assigneeId: users.admin.id,
+          priority: 'Low',
+          dueDate: '2026-05-30',
+        },
+      });
+    }
+
+    const firstPageResponse = await request.get('/api/tasks?page=1&pageSize=10', {
+      headers: {
+        authorization: `Bearer ${adminAuth.token}`,
+      },
+    });
+    const firstPageBody = await firstPageResponse.json();
+    const secondPageResponse = await request.get('/api/tasks?page=2&pageSize=10', {
+      headers: {
+        authorization: `Bearer ${adminAuth.token}`,
+      },
+    });
+    const secondPageBody = await secondPageResponse.json();
+
+    expect(firstPageResponse.ok()).toBeTruthy();
+    expect(firstPageBody.tasks).toHaveLength(10);
+    expect(firstPageBody.total).toBeGreaterThanOrEqual(12);
+    expect(firstPageBody.totalPages).toBeGreaterThanOrEqual(2);
+    expect(secondPageResponse.ok()).toBeTruthy();
+    expect(secondPageBody.page).toBe(2);
+    expect(secondPageBody.tasks.length).toBeGreaterThan(0);
+  });
 });

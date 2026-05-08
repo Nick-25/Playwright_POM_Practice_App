@@ -192,9 +192,17 @@ The logged-in admin cannot delete their own admin account.
 Returns only the tasks assigned to the user represented by the token.
 
 ```http
-GET http://127.0.0.1:3000/api/tasks
+GET http://127.0.0.1:3000/api/tasks?page=1&pageSize=10
 Authorization: Bearer YOUR_TOKEN_HERE
 ```
+
+Optional query parameters:
+
+- `page` defaults to `1`
+- `pageSize` defaults to `10` and is capped at `50`
+- `q` searches task title, status, and priority
+- `status` filters by `Open`, `In progress`, `Blocked`, or `Done`
+- `priority` filters by `High`, `Medium`, or `Low`
 
 ### Add a Task
 

@@ -96,15 +96,50 @@ function getTaskById(id) {
   return row;
 }
 
-function getTasksForUser(userId) {
-  return db
+function getTasksForUser(userId, filters = {}) {
+  const page = Math.max(Number(filters.page) || 1, 1);
+  const pageSize = Math.min(Math.max(Number(filters.pageSize) || 10, 1), 50);
+  const clauses = ['assignee_id = @userId'];
+  const params = {
+    userId,
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+  };
+
+  if (filters.q) {
+    clauses.push('(LOWER(title) LIKE @search OR LOWER(status) LIKE @search OR LOWER(priority) LIKE @search)');
+    params.search = `%${String(filters.q).toLowerCase()}%`;
+  }
+
+  if (filters.status && filters.status !== 'All') {
+    clauses.push('status = @status');
+    params.status = filters.status;
+  }
+
+  if (filters.priority && filters.priority !== 'All') {
+    clauses.push('priority = @priority');
+    params.priority = filters.priority;
+  }
+
+  const where = clauses.join(' AND ');
+  const total = db.prepare(`SELECT COUNT(*) AS count FROM tasks WHERE ${where}`).get(params).count;
+  const tasks = db
     .prepare(
       `SELECT id, title, assignee_id AS assigneeId, priority, status, due_date AS dueDate
        FROM tasks
-       WHERE assignee_id = ?
-       ORDER BY rowid`,
+       WHERE ${where}
+       ORDER BY rowid DESC
+       LIMIT @limit OFFSET @offset`,
     )
-    .all(userId);
+    .all(params);
+
+  return {
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(Math.ceil(total / pageSize), 1),
+    tasks,
+  };
 }
 
 const seedTasks = [
@@ -583,7 +618,7 @@ const server = createServer(async (request, response) => {
       return;
     }
 
-    const assignedTasks = getTasksForUser(user.id);
+    const assignedTasks = getTasksForUser(user.id, { page: 1, pageSize: 500 }).tasks;
 
     sendJson(response, 200, {
       owner: publicUser(user),
@@ -607,8 +642,20 @@ const server = createServer(async (request, response) => {
 
     if (!user) return;
 
+    const result = getTasksForUser(user.id, {
+      page: url.searchParams.get('page'),
+      pageSize: url.searchParams.get('pageSize'),
+      q: url.searchParams.get('q'),
+      status: url.searchParams.get('status'),
+      priority: url.searchParams.get('priority'),
+    });
+
     sendJson(response, 200, {
-      tasks: getTasksForUser(user.id).map(publicTask),
+      page: result.page,
+      pageSize: result.pageSize,
+      total: result.total,
+      totalPages: result.totalPages,
+      tasks: result.tasks.map(publicTask),
     });
     return;
   }

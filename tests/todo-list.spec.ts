@@ -47,8 +47,24 @@ test.describe('todo list', () => {
     await todoPage.searchFor('review');
     await todoPage.filterByPriority('High');
 
-    await todoPage.expectSummary('1 task shown');
+    await expect(todoPage.summary).toContainText('1 task shown');
     await todoPage.expectTaskVisible('Review pull request');
     await todoPage.expectTaskHidden('Update test plan');
+  });
+
+  test('paginates the task table after 10 rows', async ({ todoPage }) => {
+    await todoPage.goto();
+
+    for (let index = 0; index < 11; index += 1) {
+      await todoPage.addTask(`Paginated task ${Date.now()} ${index}`);
+    }
+
+    await expect(todoPage.taskItems).toHaveCount(10);
+    await expect(todoPage.nextPageButton).toBeEnabled();
+    await todoPage.nextPageButton.click();
+
+    await todoPage.expectPageSummary('Page 2 of 2');
+    await expect(todoPage.previousPageButton).toBeEnabled();
+    await expect(todoPage.taskItems).not.toHaveCount(0);
   });
 });
