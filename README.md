@@ -1,7 +1,28 @@
 # Playwright POM Practice App
 
-A small practice project for learning Playwright the way many teams use it:
-standard Playwright Test, a real local app, and Page Object Model classes.
+A full-stack QA automation practice project built around a real local web app,
+Playwright Test, Page Object Model classes, API testing, and GitHub Actions CI.
+
+This repo is meant to feel like a small professional test automation project:
+the app has authentication, protected pages, task workflows, SQLite-backed data,
+API endpoints, browser tests, API tests, CI execution, HTML artifacts, and a
+custom GitHub Actions test summary.
+
+## Project Type
+
+This is a **Playwright end-to-end and API automation portfolio project**.
+
+It demonstrates:
+
+- Page Object Model test design for browser workflows
+- API authentication and authorization testing
+- A local Node.js application under test
+- SQLite-backed test data persistence
+- Playwright `webServer` orchestration
+- Cross-browser test projects for Chromium and Firefox
+- GitHub Actions CI that installs, builds, runs, reports, and archives results
+- A custom test-results summary showing passed, failed, flaky, skipped, retry,
+  and duration information in the GitHub Actions run summary
 
 ## What is included
 
@@ -10,7 +31,34 @@ standard Playwright Test, a real local app, and Page Object Model classes.
 - Local SQLite persistence in `data/app.db`
 - Playwright config with `webServer`, `baseURL`, and desktop browser projects
 - Page objects in `tests/pages/`
-- Example specs for tasks, sign-in validation, and profile API loading
+- Browser specs for dashboard, sign-in, authorization, profile, and task flows
+- API specs for JWT sessions, user management, task creation, and pagination
+- GitHub Actions workflow in `.github/workflows/playwright.yml`
+- Test summary generator in `scripts/write-playwright-summary.mjs`
+
+## Continuous Integration
+
+The GitHub Actions workflow runs on pushes and pull requests to `master`.
+
+CI steps:
+
+1. Checks out the repository
+2. Sets up Node.js 20 with npm caching
+3. Installs dependencies with `npm ci`
+4. Installs Playwright browsers and system dependencies
+5. Runs `npm run build --if-present`
+6. Runs the Playwright suite with list, JSON, and HTML reporters
+7. Publishes a GitHub Actions job summary with grouped test results
+8. Uploads the Playwright HTML report and raw test results as artifacts
+
+The Actions summary includes:
+
+- Overall pass/fail status
+- Total passed, failed, flaky, and skipped tests
+- Total duration
+- A focused section for failures, flakes, and interrupted tests
+- Collapsible per-browser sections for all Chromium and Firefox tests
+- Retry counts and duration for each test
 
 ## Commands
 
@@ -25,6 +73,18 @@ The app runs at `http://127.0.0.1:3000`.
 
 Playwright starts the app automatically when you run `npm test`, so you only
 need `npm run start` when you want to click around manually.
+
+To generate the same report formats used in CI locally:
+
+```powershell
+$env:PLAYWRIGHT_JSON_OUTPUT_FILE="test-results/playwright-results.json"
+npx playwright test --reporter=list,json,html
+node scripts/write-playwright-summary.mjs test-results/playwright-results.json
+```
+
+The summary script writes to the GitHub Actions job summary when
+`GITHUB_STEP_SUMMARY` is available. Locally, it prints the Markdown summary to
+the terminal.
 
 ## Local Data
 
