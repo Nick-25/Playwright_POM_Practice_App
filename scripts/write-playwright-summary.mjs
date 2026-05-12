@@ -2,6 +2,17 @@ import { existsSync, readFileSync, appendFileSync } from 'node:fs';
 
 const reportPath = process.argv[2] ?? 'test-results/playwright-results.json';
 const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+const icons = {
+  passed: '\u2705',
+  failed: '\u274c',
+  flaky: '\u26a0\ufe0f',
+  skipped: '\u23ed\ufe0f',
+  interrupted: '\u23f9\ufe0f',
+  unknown: '\u2754',
+  total: '\ud83e\uddea',
+  duration: '\u23f1\ufe0f',
+  project: '\ud83c\udf10',
+};
 
 function write(markdown) {
   if (summaryPath) {
@@ -31,17 +42,17 @@ function totalDuration(tests) {
 function statusIcon(status) {
   switch (status) {
     case 'expected':
-      return '✅';
+      return icons.passed;
     case 'unexpected':
-      return '❌';
+      return icons.failed;
     case 'flaky':
-      return '⚠️';
+      return icons.flaky;
     case 'skipped':
-      return '⏭️';
+      return icons.skipped;
     case 'interrupted':
-      return '⏹️';
+      return icons.interrupted;
     default:
-      return '❔';
+      return icons.unknown;
   }
 }
 
@@ -144,18 +155,13 @@ const projects = [...groupBy(tests, test => test.project).entries()].sort(([left
   left.localeCompare(right),
 );
 const problemTests = tests.filter(test => ['unexpected', 'flaky', 'interrupted'].includes(test.status));
-const overallStatus = problemTests.length ? '⚠️ Needs attention' : '✅ Passed';
+const overallStatus = problemTests.length ? `${icons.flaky} Needs attention` : `${icons.passed} Passed`;
 
 function overviewTable() {
   return [
-    '| Result | Count |',
-    '| --- | ---: |',
-    `| 🧪 Total tests | ${tests.length} |`,
-    `| ${statusIcon('expected')} Passed | ${counts.expected ?? 0} |`,
-    `| ${statusIcon('unexpected')} Failed | ${counts.unexpected ?? 0} |`,
-    `| ${statusIcon('flaky')} Flaky | ${counts.flaky ?? 0} |`,
-    `| ${statusIcon('skipped')} Skipped | ${counts.skipped ?? 0} |`,
-    `| ⏱️ Total duration | ${formatDuration(totalDuration(tests))} |`,
+    '| Result | Total | Passed | Failed | Flaky | Skipped | Duration |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: |',
+    `| ${overallStatus} | ${icons.total} ${tests.length} | ${statusIcon('expected')} ${counts.expected ?? 0} | ${statusIcon('unexpected')} ${counts.unexpected ?? 0} | ${statusIcon('flaky')} ${counts.flaky ?? 0} | ${statusIcon('skipped')} ${counts.skipped ?? 0} | ${icons.duration} ${formatDuration(totalDuration(tests))} |`,
   ].join('\n');
 }
 
@@ -163,39 +169,39 @@ function resultTable(testsToRender) {
   return [
     '| Status | Test | File | Retries | Duration |',
     '| --- | --- | --- | ---: | ---: |',
-    ...testsToRender.map(test =>
-      [
-        escapeMarkdown(displayStatus(test.status)),
-        escapeMarkdown(displayTitle(test)),
-        escapeMarkdown(test.file),
-        String(test.retries),
-        formatDuration(test.duration),
-      ].join(' | '),
-    ).map(row => `| ${row} |`),
+    ...testsToRender
+      .map(test =>
+        [
+          escapeMarkdown(displayStatus(test.status)),
+          escapeMarkdown(displayTitle(test)),
+          escapeMarkdown(test.file),
+          String(test.retries),
+          formatDuration(test.duration),
+        ].join(' | '),
+      )
+      .map(row => `| ${row} |`),
   ].join('\n');
 }
 
 const summary = [
   '## Playwright Test Results',
   '',
-  `**Overall:** ${overallStatus}`,
-  '',
   overviewTable(),
   '',
   ...(problemTests.length
     ? [
         '<details open>',
-        '<summary><strong>⚠️ Failures, flaky tests, and interruptions</strong></summary>',
+        `<summary><strong>${icons.flaky} Failures, flaky tests, and interruptions</strong></summary>`,
         '',
         resultTable(problemTests),
         '',
         '</details>',
         '',
       ]
-    : ['✅ All tests passed without flakes.', '']),
+    : [`${icons.passed} All tests passed without flakes.`, '']),
   ...projects.flatMap(([project, projectTests]) => [
     '<details>',
-    `<summary><strong>🌐 ${escapeMarkdown(project)}</strong> - ${escapeMarkdown(statusSummary(projectTests))} - ⏱️ ${formatDuration(totalDuration(projectTests))}</summary>`,
+    `<summary><strong>${icons.project} ${escapeMarkdown(project)}</strong> - ${escapeMarkdown(statusSummary(projectTests))} - ${icons.duration} ${formatDuration(totalDuration(projectTests))}</summary>`,
     '',
     resultTable(projectTests),
     '',
