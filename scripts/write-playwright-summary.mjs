@@ -28,6 +28,23 @@ function totalDuration(tests) {
   return tests.reduce((total, test) => total + test.duration, 0);
 }
 
+function statusIcon(status) {
+  switch (status) {
+    case 'expected':
+      return '✅';
+    case 'unexpected':
+      return '❌';
+    case 'flaky':
+      return '⚠️';
+    case 'skipped':
+      return '⏭️';
+    case 'interrupted':
+      return '⏹️';
+    default:
+      return '❔';
+  }
+}
+
 function labelStatus(status) {
   switch (status) {
     case 'expected':
@@ -43,6 +60,10 @@ function labelStatus(status) {
     default:
       return status ? String(status) : 'Unknown';
   }
+}
+
+function displayStatus(status) {
+  return `${statusIcon(status)} ${labelStatus(status)}`;
 }
 
 function groupBy(items, getKey) {
@@ -71,10 +92,10 @@ function displayTitle(test) {
 function statusSummary(tests) {
   const counts = statusCounts(tests);
   return [
-    `Passed ${counts.expected ?? 0}`,
-    `Failed ${counts.unexpected ?? 0}`,
-    `Flaky ${counts.flaky ?? 0}`,
-    `Skipped ${counts.skipped ?? 0}`,
+    `${statusIcon('expected')} ${counts.expected ?? 0} passed`,
+    `${statusIcon('unexpected')} ${counts.unexpected ?? 0} failed`,
+    `${statusIcon('flaky')} ${counts.flaky ?? 0} flaky`,
+    `${statusIcon('skipped')} ${counts.skipped ?? 0} skipped`,
   ].join(' | ');
 }
 
@@ -123,7 +144,20 @@ const projects = [...groupBy(tests, test => test.project).entries()].sort(([left
   left.localeCompare(right),
 );
 const problemTests = tests.filter(test => ['unexpected', 'flaky', 'interrupted'].includes(test.status));
-const overallStatus = problemTests.length ? 'Needs attention' : 'Passed';
+const overallStatus = problemTests.length ? '⚠️ Needs attention' : '✅ Passed';
+
+function overviewTable() {
+  return [
+    '| Result | Count |',
+    '| --- | ---: |',
+    `| 🧪 Total tests | ${tests.length} |`,
+    `| ${statusIcon('expected')} Passed | ${counts.expected ?? 0} |`,
+    `| ${statusIcon('unexpected')} Failed | ${counts.unexpected ?? 0} |`,
+    `| ${statusIcon('flaky')} Flaky | ${counts.flaky ?? 0} |`,
+    `| ${statusIcon('skipped')} Skipped | ${counts.skipped ?? 0} |`,
+    `| ⏱️ Total duration | ${formatDuration(totalDuration(tests))} |`,
+  ].join('\n');
+}
 
 function resultTable(testsToRender) {
   return [
@@ -131,7 +165,7 @@ function resultTable(testsToRender) {
     '| --- | --- | --- | ---: | ---: |',
     ...testsToRender.map(test =>
       [
-        escapeMarkdown(labelStatus(test.status)),
+        escapeMarkdown(displayStatus(test.status)),
         escapeMarkdown(displayTitle(test)),
         escapeMarkdown(test.file),
         String(test.retries),
@@ -146,24 +180,22 @@ const summary = [
   '',
   `**Overall:** ${overallStatus}`,
   '',
-  '| Total | Passed | Failed | Flaky | Skipped | Duration |',
-  '| ---: | ---: | ---: | ---: | ---: | ---: |',
-  `| ${tests.length} | ${counts.expected ?? 0} | ${counts.unexpected ?? 0} | ${counts.flaky ?? 0} | ${counts.skipped ?? 0} | ${formatDuration(totalDuration(tests))} |`,
+  overviewTable(),
   '',
   ...(problemTests.length
     ? [
         '<details open>',
-        '<summary><strong>Failures, flaky tests, and interruptions</strong></summary>',
+        '<summary><strong>⚠️ Failures, flaky tests, and interruptions</strong></summary>',
         '',
         resultTable(problemTests),
         '',
         '</details>',
         '',
       ]
-    : ['All tests passed without flakes.', '']),
+    : ['✅ All tests passed without flakes.', '']),
   ...projects.flatMap(([project, projectTests]) => [
     '<details>',
-    `<summary><strong>${escapeMarkdown(project)}</strong> - ${escapeMarkdown(statusSummary(projectTests))} - ${formatDuration(totalDuration(projectTests))}</summary>`,
+    `<summary><strong>🌐 ${escapeMarkdown(project)}</strong> - ${escapeMarkdown(statusSummary(projectTests))} - ⏱️ ${formatDuration(totalDuration(projectTests))}</summary>`,
     '',
     resultTable(projectTests),
     '',
