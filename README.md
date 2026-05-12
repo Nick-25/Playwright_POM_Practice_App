@@ -61,6 +61,22 @@ The report job uses `ctrf-io/github-test-reporter@v1` to show:
 - Focused failure and flaky-test sections
 - A detailed test-results section based on the standard CTRF JSON file
 
+## Repository Protection
+
+This public repo includes repository-side guardrails:
+
+- `.github/CODEOWNERS` assigns ownership to `@Nick-25`
+- `.github/pull_request_template.md` documents PR validation expectations
+- `CONTRIBUTING.md` asks contributors to use pull requests instead of direct
+  pushes to `master`
+- `SECURITY.md` gives a lightweight vulnerability reporting policy
+- `.github/dependabot.yml` keeps npm and GitHub Actions dependencies current
+- The Playwright workflow uses scoped GitHub token permissions
+
+For full protection, enable a GitHub branch protection rule or ruleset for
+`master` that requires pull requests, CODEOWNER review, and passing status
+checks before merge.
+
 ## Commands
 
 ```powershell
