@@ -20,7 +20,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.19.0
           cache: npm
 
       - name: Install dependencies
@@ -41,7 +41,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.19.0
           cache: npm
 
       - name: Install dependencies
@@ -51,9 +51,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=list,json,html
-        env:
-          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/playwright-results.json
+        run: npm test
 
       - name: Upload Playwright report
         if: always()
@@ -71,6 +69,14 @@ jobs:
           path: test-results/
           retention-days: 30
 
+      - name: Upload CTRF report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctrf-report
+          path: ctrf/
+          retention-days: 30
+
   report:
     name: Publish Test Report
     runs-on: ubuntu-latest
@@ -81,12 +87,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download Playwright test results
+      - name: Download CTRF report
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: playwright-test-results
-          path: test-results
+          name: ctrf-report
+          path: ctrf
 
       - name: Download Playwright HTML report
         uses: actions/download-artifact@v4
@@ -95,5 +101,19 @@ jobs:
           name: playwright-report
           path: playwright-report
 
-      - name: Publish test results summary
-        run: node scripts/write-playwright-summary.mjs test-results/playwright-results.json
+      - name: Publish CTRF test report
+        if: needs.test.result != 'skipped'
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: './ctrf/*.json'
+          title: 'Playwright Test Results'
+          summary-report: true
+          failed-report: true
+          flaky-report: true
+          skipped-report: true
+          test-report: true
+          collapse-large-reports: true
+          report-order: 'summary-report,failed-report,flaky-report,skipped-report,test-report'
+          annotate: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

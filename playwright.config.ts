@@ -16,7 +16,19 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
 
-  reporter: [['html'], ['list']],
+  reporter: [
+    ['html'],
+    ['list'],
+    [
+      'playwright-ctrf-json-reporter',
+      {
+        outputDir: 'ctrf',
+        outputFile: 'ctrf-report.json',
+        appName: 'Playwright POM Practice App',
+        testType: 'e2e',
+      },
+    ],
+  ],
 
   webServer: {
     command: 'node server.js',
